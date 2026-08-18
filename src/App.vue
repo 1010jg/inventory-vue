@@ -1,11 +1,16 @@
 <template>
  <main class="min-h-screen p-5 md:p-10"><section class="mx-auto max-w-5xl">
-  <header class="mb-6 flex flex-col gap-3 rounded-3xl bg-slate-900 p-7 text-white md:flex-row md:justify-between"><div><p class="text-cyan-300">Vue Inventory</p><h1 class="text-3xl font-black">คลังสินค้า</h1></div><b class="rounded-full bg-white/10 px-4 py-2">{{ products.length }} รายการ</b></header>
+  <header class="mb-6 flex flex-col gap-3 rounded-3xl bg-slate-900 p-7 text-white md:flex-row md:justify-between"><div><p class="text-cyan-300">Vue Inventory</p><h1 class="text-3xl font-black">คลังสินค้า</h1></div><b class="rounded-full bg-white/10 px-4 py-2">{{ products.length }} รายการ</b></header> <!-- เพิ่มใต้ header -->
+    <p v-if="lowStock.length" class="mb-5 rounded-xl bg-rose-100 p-4 font-bold text-rose-700">
+      แจ้งเตือน: มีสินค้าใกล้หมด {{ lowStock.length }} รายการ
+    </p>
   <form @submit.prevent="save" class="grid gap-3 rounded-2xl bg-white p-5 shadow-sm md:grid-cols-5"><input v-model="form.sku" class="rounded-xl border p-3" placeholder="SKU" required/><input v-model="form.name" class="rounded-xl border p-3" placeholder="ชื่อสินค้า" required/><input v-model.number="form.price" type="number" class="rounded-xl border p-3" placeholder="ราคา" required/><input v-model.number="form.stock" type="number" class="rounded-xl border p-3" placeholder="คงเหลือ" required/><button class="rounded-xl bg-cyan-600 p-3 font-bold text-white">{{ editId?'บันทึก':'เพิ่มสินค้า' }}</button></form>
-  <div class="mt-5 grid gap-4 md:grid-cols-2"><article v-for="x in products" :key="x._id" class="rounded-2xl bg-white p-5 shadow-sm"><div class="flex justify-between"><div><p class="text-xs text-slate-500">{{x.sku}}</p><h2 class="font-black">{{x.name}}</h2></div><b class="text-cyan-700">{{x.price.toLocaleString()}} บาท</b></div><p class="mt-3">คงเหลือ <b>{{x.stock}}</b> ชิ้น</p><div class="mt-4"><button @click="edit(x)" class="mr-3 text-amber-600">แก้ไข</button><button @click="remove(x._id)" class="text-rose-600">ลบ</button></div></article></div>
+  <div class="mt-5 grid gap-4 md:grid-cols-2"><article v-for="x in products" :key="x._id" class="rounded-2xl bg-white p-5 shadow-sm"><div class="flex justify-between"><div><p class="text-xs text-slate-500">{{x.sku}}</p><h2 class="font-black">{{x.name}}</h2></div><b class="text-cyan-700">{{x.price.toLocaleString()}} บาท</b></div><p class="mt-3">คงเหลือ <b>{{x.stock}}</b> ชิ้น</p><div class="mt-4"><p v-if="x.stock <= x.reorderPoint" class="mt-2 text-sm font-bold text-rose-600">⚠ สินค้าใกล้หมด โปรดสั่งเพิ่ม</p><button @click="edit(x)" class="mr-3 text-amber-600">แก้ไข</button><button @click="remove(x._id)" class="text-rose-600">ลบ</button></div></article></div>
  </section></main>
 </template>
 <script setup>
-import {onMounted,ref} from 'vue'; const API='http://localhost:3001/api/products'; const products=ref([]),editId=ref(null); const blank=()=>({sku:'',name:'',price:0,stock:0,reorderPoint:5}); const form=ref(blank());
+import { computed, onMounted, ref } from 'vue'; const API='http://localhost:3001/api/products'; const products=ref([]),editId=ref(null); const blank=()=>({sku:'',name:'',price:0,stock:0,reorderPoint:5}); const form=ref(blank());
 const load=async()=>products.value=await fetch(API).then(r=>r.json()); const save=async()=>{await fetch(editId.value?`${API}/${editId.value}`:API,{method:editId.value?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form.value)});editId.value=null;form.value=blank();load()}; const edit=x=>{editId.value=x._id;form.value={...x}};const remove=async id=>{if(confirm('ลบสินค้า?')){await fetch(`${API}/${id}`,{method:'DELETE'});load()}};onMounted(load);
+const lowStock = computed(() => products.value.filter(x => x.stock <= x.reorderPoint))
 </script>
+
